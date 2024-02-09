@@ -1,11 +1,15 @@
 package com.emunoz.inversiones.billetera.models.response;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Builder
-public class WalletRespnseDTo {
+@AllArgsConstructor
+@NoArgsConstructor
+public class WalletResponseDTO {
 
     private String message;
     private Object data;

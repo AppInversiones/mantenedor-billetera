@@ -26,10 +26,15 @@ public class WalletEntity {
     private Float usd_balance;
 
     @Column(name = "date_update")
-    private LocalDateTime date_update;
+    private LocalDateTime date_create;
 
     @Column(name = "user_id")
-    private Long user_id;
+    private Long userId;
+
+    @PrePersist
+    protected void onCreate() {
+        date_create = LocalDateTime.now();
+    }
 
 
 }
