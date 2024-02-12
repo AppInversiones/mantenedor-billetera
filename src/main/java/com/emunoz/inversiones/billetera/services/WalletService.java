@@ -11,7 +11,6 @@ public interface WalletService {
 
     WalletResponseDTO getAllWallet();
 
-    WalletResponseDTO addBalanceToWallet(WalletRequestDTO walletRequestDTO);
+    WalletResponseDTO  walletBalanceManager(WalletRequestDTO walletRequestDTO, String operation);
 
-    WalletResponseDTO subtractBalanceToWallet(WalletRequestDTO walletRequestDTO);
 }
