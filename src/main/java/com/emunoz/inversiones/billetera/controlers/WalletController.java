@@ -81,8 +81,6 @@ public class WalletController {
     @GetMapping (path = "{userId}")
     public ResponseEntity<WalletResponseDTO>getWalletByUserId(@PathVariable("userId") Long id) {
 
-        log.info("entro al controlador");
-
         WalletResponseDTO res = walletService.getWalletByUser(id);
 
         if (res.getCode() == 1){
@@ -104,31 +102,30 @@ public class WalletController {
              }
      )
      @PutMapping
-     public ResponseEntity<WalletResponseDTO> UpdateBalanceWallet(@Validated @RequestBody WalletRequestDTO walletRequestDTO, @RequestParam String operation, BindingResult bindingResult, @RequestHeader(name = "Authorization") String token) {
+     public ResponseEntity<WalletResponseDTO>  walletBalanceManager(@Validated @RequestBody WalletRequestDTO walletRequestDTO, BindingResult bindingResult, @RequestParam String operation, @RequestHeader(name = "Authorization") String token) {
 
-         ResponseEntity<WalletResponseDTO> validationError = validationUtils.handleValidationErrors(bindingResult);
+         ResponseEntity<WalletResponseDTO> validationError = validationUtils.handleValidationErrors (bindingResult);
          if (validationError != null) {
              return validationError;
          }
 
-         if ("add".equals(operation)) {
-             WalletResponseDTO res = walletService.addBalanceToWallet(walletRequestDTO);
-             if (res.getCode() != 2) {
-                 return new ResponseEntity<>(res, HttpStatus.NOT_FOUND);
-             }
-             return new ResponseEntity<>(res, HttpStatus.OK);
-         } else if ("subtract".equals(operation)) {
-             WalletResponseDTO res = walletService.subtractBalanceToWallet(walletRequestDTO);
-             if (res.getCode() != 2) {
-                 return new ResponseEntity<>(res, HttpStatus.NOT_FOUND);
-             }
-             return new ResponseEntity<>(res, HttpStatus.OK);
-         } else {
+         if (!"add".equals(operation) && !"subtract".equals(operation)) {
              WalletResponseDTO walletResponseDTO = new WalletResponseDTO();
-             walletResponseDTO.setMessage("Operación invalida");
+             walletResponseDTO.setMessage("Operación no valida");
              walletResponseDTO.setCode(0);
              return new ResponseEntity<>(walletResponseDTO, HttpStatus.BAD_REQUEST);
          }
 
+         WalletResponseDTO res = walletService.walletBalanceManager(walletRequestDTO, operation);
+
+         if (res.getCode() == 2) {
+             return new ResponseEntity<>(res, HttpStatus.OK);
+         } else if (res.getCode() == 1) {
+             return new ResponseEntity<>(res, HttpStatus.FORBIDDEN);
+         }else if (res.getCode() == 0) {
+             return new ResponseEntity<>(res, HttpStatus.NOT_FOUND);
+         }
+
+         return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
      }
 }

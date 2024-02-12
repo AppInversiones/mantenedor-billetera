@@ -87,8 +87,9 @@ public class WalletServiceImpl implements WalletService {
     }
 
     @Override
-    public WalletResponseDTO addBalanceToWallet(WalletRequestDTO walletRequestDTO) {
+    public WalletResponseDTO walletBalanceManager(WalletRequestDTO walletRequestDTO, String operation) {
 
+        log.error("dentro al servicio");
         // Obtener la fecha actual en el formato dd-mm-yyyy
         LocalDate currentDate = LocalDate.now();
         String formattedDate = currentDate.format(DateTimeFormatter.ofPattern("dd-MM-yyyy"));
@@ -108,51 +109,20 @@ public class WalletServiceImpl implements WalletService {
 
         WalletResponseDTO walletResponseDTO = new WalletResponseDTO();
 
-        if (existingWallet != null) {
-            // Si la billetera existe, actualizar el saldo
-            existingWallet.setUsd_balance(existingWallet.getUsd_balance() + usdBalance);
-            walletRepository.save(existingWallet);
+        if ("add".equals(operation) && existingWallet != null) {
 
-            WalletDataResponseDTO walletDataResponseDTO = WalletMapper.toResponseDTO(existingWallet);
+                // Si la billetera existe, actualizar el saldo
+                existingWallet.setUsd_balance(existingWallet.getUsd_balance() + usdBalance);
+                walletRepository.save(existingWallet);
 
-            walletResponseDTO.setMessage("Se a agregado saldo a la billetera");
-            walletResponseDTO.setData(walletDataResponseDTO);
-            walletResponseDTO.setCode(2);
+                WalletDataResponseDTO walletDataResponseDTO = WalletMapper.toResponseDTO(existingWallet);
 
-            return walletResponseDTO;
-        }
+                walletResponseDTO.setMessage("Se a agregado saldo a la billetera");
+                walletResponseDTO.setData(walletDataResponseDTO);
+                walletResponseDTO.setCode(2);
 
-
-        walletResponseDTO.setMessage("Billetera no existe");
-        walletResponseDTO.setCode(0);
-
-        return walletResponseDTO;
-
-    }
-
-    @Override
-    public WalletResponseDTO subtractBalanceToWallet(WalletRequestDTO walletRequestDTO) {
-        // Obtener la fecha actual en el formato dd-mm-yyyy
-        LocalDate currentDate = LocalDate.now();
-        String formattedDate = currentDate.format(DateTimeFormatter.ofPattern("dd-MM-yyyy"));
-
-        // Construir la URL con la fecha actual
-        String apiUrl = "https://mindicador.cl/api/dolar/" + formattedDate;
-
-        // Llamada a la API para obtener el valor del dólar actual
-        RestTemplate restTemplate = new RestTemplate();
-        DollarApiResponse response = restTemplate.getForObject(apiUrl, DollarApiResponse.class);
-        Float usdExchangeRate = response.getSerie().get(0).getValor(); // Valor del dólar en CLP
-
-        // Convertir el saldo en CLP a USD
-        Float usdBalance = walletRequestDTO.getUsd_balance() / usdExchangeRate;
-
-        WalletEntity existingWallet = walletRepository.findByUserId(walletRequestDTO.getUser_id()).orElse(null);
-
-        WalletResponseDTO walletResponseDTO = new WalletResponseDTO();
-
-        if (existingWallet != null) {
-            // Verificar si hay saldo suficiente en la billetera
+                return walletResponseDTO;
+        } else if ("subtract".equals(operation) && existingWallet != null) {
             if (existingWallet.getUsd_balance() >= usdBalance) {
                 // Si hay saldo suficiente, actualizar el saldo
                 existingWallet.setUsd_balance(existingWallet.getUsd_balance() - usdBalance);
@@ -169,16 +139,16 @@ public class WalletServiceImpl implements WalletService {
             // Si no hay saldo suficiente, devolver un mensaje de error
             walletResponseDTO.setMessage("Saldo insuficiente en la billetera");
             walletResponseDTO.setData(null);
-            walletResponseDTO.setCode(0);
+            walletResponseDTO.setCode(1);
 
             return walletResponseDTO;
-
         }
 
         walletResponseDTO.setMessage("Billetera no existe");
         walletResponseDTO.setCode(0);
 
         return walletResponseDTO;
+
     }
 
     //-------------------
