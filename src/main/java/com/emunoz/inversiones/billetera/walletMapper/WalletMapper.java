@@ -11,6 +11,7 @@ public class WalletMapper {
         WalletEntity walletEntity = new WalletEntity();
         walletEntity.setUsd_balance(walletRequestDTO.getUsd_balance());
         walletEntity.setUserId(walletRequestDTO.getUser_id());
+        walletEntity.setState(walletRequestDTO.getState());
 
         return walletEntity;
     }
@@ -21,6 +22,7 @@ public class WalletMapper {
         walletdataResponseDTO.setUsd_balance(walletEntity.getUsd_balance());
         walletdataResponseDTO.setUser_id(walletEntity.getUserId());
         walletdataResponseDTO.setDate_update(walletEntity.getDate_create());
+        walletdataResponseDTO.setState(walletEntity.getState());
 
         return walletdataResponseDTO;
     }

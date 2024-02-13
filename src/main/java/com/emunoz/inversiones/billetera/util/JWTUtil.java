@@ -130,4 +130,21 @@ public class JWTUtil {
 
     }
 
+    public Integer getPermissionAdminAndUser(String jwt, Long id){
+
+        Integer permission = this.getPermission(jwt);
+        if (permission == 2) {
+            return 2;
+        }
+
+        String key = this.getKey(jwt);
+
+        if (key.equals(String.valueOf(id))) {
+            return 2;
+        }
+
+        return 0;
+
+    }
+
 }

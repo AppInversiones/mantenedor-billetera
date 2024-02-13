@@ -2,6 +2,7 @@ package com.emunoz.inversiones.billetera.controlers;
 
 import com.emunoz.inversiones.billetera.models.request.WalletRequestDTO;
 import com.emunoz.inversiones.billetera.models.response.WalletResponseDTO;
+import com.emunoz.inversiones.billetera.services.ValidationTokenService;
 import com.emunoz.inversiones.billetera.services.WalletService;
 import com.emunoz.inversiones.billetera.util.JWTUtil;
 import com.emunoz.inversiones.billetera.validation.ValidationUtils;
@@ -32,8 +33,7 @@ public class WalletController {
     private ValidationUtils validationUtils;
 
     @Autowired
-    private JWTUtil jwtUtil;
-
+    private ValidationTokenService validationTokenService;
 
     @Operation(summary = "Servicio que lista todas las billeteras")
     @ApiResponses(
@@ -48,12 +48,15 @@ public class WalletController {
     @GetMapping
     public ResponseEntity<WalletResponseDTO> getAllWallet(@RequestHeader(name = "Authorization") String token) {
 
-        if(jwtUtil.getPermission(token) != 2) {
-            WalletResponseDTO res = new WalletResponseDTO();
-            res.setMessage("Usuario no autorizado.");
-            res.setCode(0);
-            return new ResponseEntity<>(res, HttpStatus.UNAUTHORIZED);
+        // Verifica que el token sea valido o que tenga permisos de administrador.
+        if (!validationTokenService.validateTokenAdmin(token)) {
+            WalletResponseDTO walletResponse = new WalletResponseDTO();
+
+            walletResponse.setMessage("Usuario no válido.");
+            walletResponse.setCode(1);
+            return new ResponseEntity<>(walletResponse, HttpStatus.UNAUTHORIZED);
         }
+
         WalletResponseDTO res = walletService.getAllWallet();
 
         if (res.getCode() == 1){
@@ -79,9 +82,17 @@ public class WalletController {
             }
     )
     @GetMapping (path = "{userId}")
-    public ResponseEntity<WalletResponseDTO>getWalletByUserId(@PathVariable("userId") Long id) {
+    public ResponseEntity<WalletResponseDTO>getWalletByUserId(@PathVariable("userId") Long userId, @RequestHeader(name = "Authorization") String token) {
 
-        WalletResponseDTO res = walletService.getWalletByUser(id);
+        // Verifica que el token sea valido , que tenga permisos de administrador o que el user_id entregado corresponda con la key del token
+        if (validationTokenService.validateTokenUserOrAdmin(token, userId)) {
+            WalletResponseDTO walletResponse = new WalletResponseDTO();
+            walletResponse.setMessage("Usuario no válido.");
+            walletResponse.setCode(1);
+            return new ResponseEntity<>(walletResponse, HttpStatus.UNAUTHORIZED);
+        }
+
+        WalletResponseDTO res = walletService.getWalletByUser(userId);
 
         if (res.getCode() == 1){
             return new ResponseEntity<>(res, HttpStatus.NOT_FOUND);
@@ -109,6 +120,14 @@ public class WalletController {
              return validationError;
          }
 
+         // Verifica que el token sea valido , que tenga permisos de administrador o que el user_id entregado corresponda con la key del token
+         if (validationTokenService.validateTokenUserOrAdmin(token, walletRequestDTO.getUser_id())) {
+             WalletResponseDTO walletResponse = new WalletResponseDTO();
+             walletResponse.setMessage("Usuario no válido.");
+             walletResponse.setCode(1);
+             return new ResponseEntity<>(walletResponse, HttpStatus.UNAUTHORIZED);
+         }
+
          if (!"add".equals(operation) && !"subtract".equals(operation)) {
              WalletResponseDTO walletResponseDTO = new WalletResponseDTO();
              walletResponseDTO.setMessage("Operación no valida");
@@ -121,11 +140,68 @@ public class WalletController {
          if (res.getCode() == 2) {
              return new ResponseEntity<>(res, HttpStatus.OK);
          } else if (res.getCode() == 1) {
-             return new ResponseEntity<>(res, HttpStatus.FORBIDDEN);
+             return new ResponseEntity<>(res, HttpStatus.CONFLICT);
          }else if (res.getCode() == 0) {
              return new ResponseEntity<>(res, HttpStatus.NOT_FOUND);
          }
 
          return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
      }
+
+    @Operation(summary = "Desactivar billetera")
+    @ApiResponses(
+            value = {
+                    @ApiResponse(responseCode = "202", description = "Se a desactivado la billetera con exito", content = @Content),
+                    @ApiResponse(responseCode = "409", description = "Billetera no encontrada", content = @Content),
+                    @ApiResponse(responseCode = "500", description = "Error interno del servidor", content = @Content),
+            }
+    )
+    @PutMapping(path = "/disable/{id}")
+    public ResponseEntity<WalletResponseDTO> walletDisabling(@PathVariable("id") Long id, @RequestHeader(name = "Authorization") String token) {
+
+        // Verifica que el token sea valido o que tenga permisos de administrador.
+        if (!validationTokenService.validateTokenAdmin(token)) {
+            WalletResponseDTO walletResponse = new WalletResponseDTO();
+            walletResponse.setMessage("Usuario no válido.");
+            walletResponse.setCode(1);
+            return new ResponseEntity<>(walletResponse, HttpStatus.UNAUTHORIZED);
+        }
+
+         WalletResponseDTO res = walletService.walletDisabling(id);
+
+         if (res.getCode() == 0) {
+             return new ResponseEntity<>(res, HttpStatus.NOT_FOUND);
+         } else if (res.getCode() == 1) {
+             return new ResponseEntity<>(res, HttpStatus.CONFLICT);
+         } else if (res.getCode() == 2) {
+             return new ResponseEntity<>(res, HttpStatus.OK);
+         }
+
+         return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+     }
+
+    @PutMapping(path = "/activate/{id}")
+    public ResponseEntity<WalletResponseDTO> walletActivating (@PathVariable("id") Long id, @RequestHeader(name = "Authorization") String token) {
+
+        // Verifica que el token sea valido o que tenga permisos de administrador.
+        if (!validationTokenService.validateTokenAdmin(token)) {
+            WalletResponseDTO walletResponse = new WalletResponseDTO();
+
+            walletResponse.setMessage("Usuario no válido.");
+            walletResponse.setCode(1);
+            return new ResponseEntity<>(walletResponse, HttpStatus.UNAUTHORIZED);
+        }
+
+        WalletResponseDTO res = walletService.walletActivating(id);
+
+        if (res.getCode() == 0) {
+            return new ResponseEntity<>(res, HttpStatus.NOT_FOUND);
+        } else if (res.getCode() == 1) {
+            return new ResponseEntity<>(res, HttpStatus.CONFLICT);
+        } else if (res.getCode() == 2) {
+            return new ResponseEntity<>(res, HttpStatus.OK);
+        }
+
+        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
 }
