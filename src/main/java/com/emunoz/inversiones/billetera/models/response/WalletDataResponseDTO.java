@@ -17,4 +17,5 @@ public class WalletDataResponseDTO {
     private Float usd_balance;
     private LocalDateTime date_update;
     private Long user_id;
+    private String state;
 }

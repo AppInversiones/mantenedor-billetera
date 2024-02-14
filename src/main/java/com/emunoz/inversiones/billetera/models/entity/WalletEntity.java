@@ -31,6 +31,9 @@ public class WalletEntity {
     @Column(name = "user_id")
     private Long userId;
 
+    @Column(name = "state")
+    private String state;
+
     @PrePersist
     protected void onCreate() {
         date_create = LocalDateTime.now();

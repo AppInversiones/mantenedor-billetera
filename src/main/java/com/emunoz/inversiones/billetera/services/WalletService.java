@@ -7,10 +7,11 @@ public interface WalletService {
 
     WalletResponseDTO getWalletByUser(Long user_id);
 
-    WalletResponseDTO withdrawBalanceWallet(WalletRequestDTO walletRequestDTO);
-
     WalletResponseDTO getAllWallet();
 
     WalletResponseDTO  walletBalanceManager(WalletRequestDTO walletRequestDTO, String operation);
 
+    WalletResponseDTO walletDisabling(Long walletId);
+
+    WalletResponseDTO walletActivating(Long walletId);
 }

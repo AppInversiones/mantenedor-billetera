@@ -11,10 +11,8 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import java.time.LocalDate;
@@ -39,12 +37,12 @@ public class WalletServiceImpl implements WalletService {
                 .collect(Collectors.toList());
 
         if (walletEntities.isEmpty()) {
-            walletResponseDTO.setMessage("No hay billeteras creadas");
-            walletResponseDTO.setCode(0);
+            walletResponseDTO.setMessage("No hay billeteras creadas.");
+            walletResponseDTO.setCode(1);
             return walletResponseDTO;
         }
 
-        walletResponseDTO.setMessage("Billeteras encontradas");
+        walletResponseDTO.setMessage("Billeteras encontradas.");
         walletResponseDTO.setData(walletDataResponseDTOS);
         walletResponseDTO.setCode(2);
 
@@ -62,7 +60,7 @@ public class WalletServiceImpl implements WalletService {
 
         if (existingWallet != null) {
             WalletDataResponseDTO walletDataResponseDTO = WalletMapper.toResponseDTO(existingWallet);
-            walletResponseDTO.setMessage("Billetera encontrada");
+            walletResponseDTO.setMessage("Billetera encontrada.");
             walletResponseDTO.setData(walletDataResponseDTO);
             walletResponseDTO.setCode(2);
 
@@ -73,12 +71,13 @@ public class WalletServiceImpl implements WalletService {
         WalletRequestDTO walletRequestDTO = new WalletRequestDTO();
         walletRequestDTO.setUsd_balance(0F);
         walletRequestDTO.setUser_id(user_id);
+        walletRequestDTO.setState("activa.");
 
         WalletEntity newWalletEntity = WalletMapper.toEntity(walletRequestDTO);
         walletRepository.save(newWalletEntity);
 
         WalletDataResponseDTO walletDataResponseDTO = WalletMapper.toResponseDTO(newWalletEntity);
-        walletResponseDTO.setMessage("Billetera encontrada");
+        walletResponseDTO.setMessage("Billetera encontrada.");
         walletResponseDTO.setData(walletDataResponseDTO);
         walletResponseDTO.setCode(2);
 
@@ -89,7 +88,6 @@ public class WalletServiceImpl implements WalletService {
     @Override
     public WalletResponseDTO walletBalanceManager(WalletRequestDTO walletRequestDTO, String operation) {
 
-        log.error("dentro al servicio");
         // Obtener la fecha actual en el formato dd-mm-yyyy
         LocalDate currentDate = LocalDate.now();
         String formattedDate = currentDate.format(DateTimeFormatter.ofPattern("dd-MM-yyyy"));
@@ -109,20 +107,30 @@ public class WalletServiceImpl implements WalletService {
 
         WalletResponseDTO walletResponseDTO = new WalletResponseDTO();
 
-        if ("add".equals(operation) && existingWallet != null) {
+        if (existingWallet == null) {
+            walletResponseDTO.setMessage("La billetera no existe.");
+            walletResponseDTO.setCode(0);
+            return walletResponseDTO;
+        }
 
-                // Si la billetera existe, actualizar el saldo
-                existingWallet.setUsd_balance(existingWallet.getUsd_balance() + usdBalance);
-                walletRepository.save(existingWallet);
+        if (existingWallet.getState().equals("inactiva")) {
+            walletResponseDTO.setMessage("La billetera se encuentra inactiva.");
+            walletResponseDTO.setData(existingWallet);
+            walletResponseDTO.setCode(1);
+            return walletResponseDTO;
+        }
 
-                WalletDataResponseDTO walletDataResponseDTO = WalletMapper.toResponseDTO(existingWallet);
+        if ("add".equals(operation)) {
+            // Si la billetera existe y está activa, actualizar el saldo
+            existingWallet.setUsd_balance(existingWallet.getUsd_balance() + usdBalance);
+            walletRepository.save(existingWallet);
 
-                walletResponseDTO.setMessage("Se a agregado saldo a la billetera");
-                walletResponseDTO.setData(walletDataResponseDTO);
-                walletResponseDTO.setCode(2);
+            WalletDataResponseDTO walletDataResponseDTO = WalletMapper.toResponseDTO(existingWallet);
 
-                return walletResponseDTO;
-        } else if ("subtract".equals(operation) && existingWallet != null) {
+            walletResponseDTO.setMessage("Se ha agregado saldo a la billetera.");
+            walletResponseDTO.setData(walletDataResponseDTO);
+            walletResponseDTO.setCode(2);
+        } else if ("subtract".equals(operation)) {
             if (existingWallet.getUsd_balance() >= usdBalance) {
                 // Si hay saldo suficiente, actualizar el saldo
                 existingWallet.setUsd_balance(existingWallet.getUsd_balance() - usdBalance);
@@ -130,22 +138,16 @@ public class WalletServiceImpl implements WalletService {
 
                 WalletDataResponseDTO walletDataResponseDTO = WalletMapper.toResponseDTO(existingWallet);
 
-                walletResponseDTO.setMessage("Saldo restado con éxito");
+                walletResponseDTO.setMessage("Saldo restado con éxito.");
                 walletResponseDTO.setData(walletDataResponseDTO);
                 walletResponseDTO.setCode(2);
-
-                return walletResponseDTO;
+            } else {
+                // Si no hay saldo suficiente, devolver un mensaje de error
+                walletResponseDTO.setMessage("Saldo insuficiente en la billetera.");
+                walletResponseDTO.setData(existingWallet);
+                walletResponseDTO.setCode(1);
             }
-            // Si no hay saldo suficiente, devolver un mensaje de error
-            walletResponseDTO.setMessage("Saldo insuficiente en la billetera");
-            walletResponseDTO.setData(null);
-            walletResponseDTO.setCode(1);
-
-            return walletResponseDTO;
         }
-
-        walletResponseDTO.setMessage("Billetera no existe");
-        walletResponseDTO.setCode(0);
 
         return walletResponseDTO;
 
@@ -153,8 +155,60 @@ public class WalletServiceImpl implements WalletService {
 
     //-------------------
     @Override
-    public WalletResponseDTO withdrawBalanceWallet(WalletRequestDTO walletRequestDTO) {
-        return null;
+    public WalletResponseDTO walletDisabling(Long id) {
+
+        WalletResponseDTO walletResponseDTO = new WalletResponseDTO();
+        WalletEntity existingWallet = walletRepository.findById(id).orElse(null);
+
+
+        if (existingWallet == null) {
+            walletResponseDTO.setMessage("La billetera no existe.");
+            walletResponseDTO.setData(null);
+            walletResponseDTO.setCode(0);
+            return walletResponseDTO;
+        } else if (existingWallet.getState().equals("inactiva")) {
+            walletResponseDTO.setMessage("La billetera ya se encuentra inactiva.");
+            walletResponseDTO.setData(existingWallet);
+            walletResponseDTO.setCode(1);
+            return walletResponseDTO;
+        }
+
+        existingWallet.setState("inactiva");
+        walletRepository.save(existingWallet);
+
+        walletResponseDTO.setMessage("La billetera a sido desactivada.");
+        walletResponseDTO.setData(existingWallet);
+        walletResponseDTO.setCode(2);
+
+        return walletResponseDTO;
+    }
+
+    @Override
+    public WalletResponseDTO walletActivating(Long id) {
+        WalletResponseDTO walletResponseDTO = new WalletResponseDTO();
+        WalletEntity existingWallet = walletRepository.findById(id).orElse(null);
+
+
+        if (existingWallet == null) {
+            walletResponseDTO.setMessage("La billetera no existe.");
+            walletResponseDTO.setData(null);
+            walletResponseDTO.setCode(0);
+            return walletResponseDTO;
+        } else if (existingWallet.getState().equals("activa")) {
+            walletResponseDTO.setMessage("La billetera ya se encuentra activa.");
+            walletResponseDTO.setData(existingWallet);
+            walletResponseDTO.setCode(1);
+            return walletResponseDTO;
+        }
+
+        existingWallet.setState("activa");
+        walletRepository.save(existingWallet);
+
+        walletResponseDTO.setMessage("La billetera se a activado.");
+        walletResponseDTO.setData(existingWallet);
+        walletResponseDTO.setCode(2);
+
+        return walletResponseDTO;
     }
 
 }
