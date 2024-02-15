@@ -18,4 +18,6 @@ public class WalletDataResponseDTO {
     private LocalDateTime date_update;
     private Long user_id;
     private String state;
+
+
 }
