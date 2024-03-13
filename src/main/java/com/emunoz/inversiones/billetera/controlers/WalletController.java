@@ -83,7 +83,6 @@ public class WalletController {
     @GetMapping (path = "{userId}")
     public ResponseEntity<WalletResponseDTO>getWalletByUserId(@PathVariable("userId") Long userId, @RequestHeader(name = "Authorization") String token) {
 
-        log.info(validationTokenService.validateTokenUserOrAdmin(token, userId));
         // Verifica que el token sea valido , que tenga permisos de administrador o que el user_id entregado corresponda con la key del token
         if (!validationTokenService.validateTokenUserOrAdmin(token, userId)) {
             WalletResponseDTO walletResponse = new WalletResponseDTO();
