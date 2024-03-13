@@ -5,7 +5,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 
-@FeignClient(name = "acceso", url = "http://localhost:8080")
+@FeignClient(name = "acceso", url = "http://inversiones-acceso:8080")
 public interface ValidationTokenClient {
 
 
