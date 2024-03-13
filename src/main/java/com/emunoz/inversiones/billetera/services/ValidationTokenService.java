@@ -17,7 +17,7 @@ public class ValidationTokenService {
 
     public boolean validateTokenUserOrAdmin(String token, Long userId) {
 
-        return !validationTokenClient.validateTokenUserOrAdmin(userId, token);
+        return validationTokenClient.validateTokenUserOrAdmin(userId, token);
 
     }
 

@@ -83,9 +83,9 @@ public class WalletController {
     @GetMapping (path = "{userId}")
     public ResponseEntity<WalletResponseDTO>getWalletByUserId(@PathVariable("userId") Long userId, @RequestHeader(name = "Authorization") String token) {
 
+        log.info(validationTokenService.validateTokenUserOrAdmin(token, userId));
         // Verifica que el token sea valido , que tenga permisos de administrador o que el user_id entregado corresponda con la key del token
-        log.error(!validationTokenService.validateTokenUserOrAdmin(token, userId));
-        if (validationTokenService.validateTokenUserOrAdmin(token, userId)) {
+        if (!validationTokenService.validateTokenUserOrAdmin(token, userId)) {
             WalletResponseDTO walletResponse = new WalletResponseDTO();
             walletResponse.setMessage("Usuario no válido.");
             walletResponse.setCode(1);
@@ -115,7 +115,7 @@ public class WalletController {
          }
 
          // Verifica que el token sea valido , que tenga permisos de administrador o que el user_id entregado corresponda con la key del token
-         if (validationTokenService.validateTokenUserOrAdmin(token, walletRequestDTO.getUser_id())) {
+         if (!validationTokenService.validateTokenUserOrAdmin(token, walletRequestDTO.getUser_id())) {
              WalletResponseDTO walletResponse = new WalletResponseDTO();
              walletResponse.setMessage("Usuario no válido.");
              walletResponse.setCode(1);
